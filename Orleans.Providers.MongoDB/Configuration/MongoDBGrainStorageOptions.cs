@@ -5,6 +5,22 @@ using System.Collections.Generic;
 
 namespace Orleans.Providers.MongoDB.Configuration
 {
+    public static class MongoDBGrainStorageOptionsExtentions
+    {
+        public static void For<T>(this MongoDBGrainStorageOptions opt,             
+            Action<MongoDBGrainStorageOptions> options)
+            where T : IGrain
+        {
+            if (opt.ForType == null)
+            {
+                opt.ForType = new Dictionary<Type, MongoDBGrainStorageOptions>();
+            }
+            var typeOptions = new MongoDBGrainStorageOptions();
+            options(typeOptions);
+            opt.ForType.Add(typeof(T), typeOptions);
+        }
+    }
+
     /// <summary>
     /// Option to configure MongoDB Storage.
     /// </summary>
@@ -15,15 +31,6 @@ namespace Orleans.Providers.MongoDB.Configuration
         public string StripFromGrainName { get; set; }
 
         internal Dictionary<Type, MongoDBGrainStorageOptions> ForType { get; set; }
-
-        public void For<T>(T type, MongoDBGrainStorageOptions options)
-        {
-            if (ForType == null)
-            {
-                ForType = new Dictionary<Type, MongoDBGrainStorageOptions>();
-            }
-            ForType.Add(typeof(T), options);
-        }
 
         public MongoDBGrainStorageOptions GetForType(Type type)
         {
