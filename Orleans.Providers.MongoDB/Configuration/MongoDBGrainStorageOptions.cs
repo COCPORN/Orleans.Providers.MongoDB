@@ -1,5 +1,8 @@
 ﻿// ReSharper disable InheritdocConsiderUsage
 
+using System;
+using System.Collections.Generic;
+
 namespace Orleans.Providers.MongoDB.Configuration
 {
     /// <summary>
@@ -10,6 +13,22 @@ namespace Orleans.Providers.MongoDB.Configuration
         public bool SeparateCollectionsForKeyExtensions { get; set; }
 
         public string StripFromGrainName { get; set; }
+
+        internal Dictionary<Type, MongoDBGrainStorageOptions> ForType { get; set; }
+
+        public void For<T>(T type, MongoDBGrainStorageOptions options)
+        {
+            if (ForType == null)
+            {
+                ForType = new Dictionary<Type, MongoDBGrainStorageOptions>();
+            }
+            ForType.Add(typeof(T), options);
+        }
+
+        public MongoDBGrainStorageOptions GetForType(Type type)
+        {
+            return ForType[type];
+        }
 
         public MongoDBGrainStorageOptions()
         {

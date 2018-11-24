@@ -179,6 +179,17 @@ namespace Orleans.Providers.MongoDB.StorageProviders
 
         private IMongoCollection<BsonDocument> GetCollection(string grainType, GrainReference grainReference)
         {
+            var options = this.options;
+
+            if (options.ForType != null)
+            {
+                var type = grainReference.GetType();
+                if (options.ForType.ContainsKey(type))
+                {
+                    options = options.GetForType(type);
+                }
+            }
+
             var collectionName = options.CollectionPrefix + ReturnGrainName(grainType);
 
             if (options.SeparateCollectionsForKeyExtensions == true)
