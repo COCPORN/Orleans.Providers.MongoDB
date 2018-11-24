@@ -15,7 +15,7 @@ namespace Orleans.Providers.MongoDB.Configuration
             {
                 opt.ForType = new Dictionary<Type, MongoDBGrainStorageOptions>();
             }
-            var typeOptions = opt.Clown();
+            var typeOptions = (MongoDBGrainStorageOptions)opt.Clone();
             options(typeOptions);
             opt.ForType.Add(typeof(T), typeOptions);
         }
@@ -24,7 +24,7 @@ namespace Orleans.Providers.MongoDB.Configuration
     /// <summary>
     /// Option to configure MongoDB Storage.
     /// </summary>
-    public class MongoDBGrainStorageOptions : MongoDBOptions
+    public class MongoDBGrainStorageOptions : MongoDBOptions, ICloneable
     {
         public bool SeparateCollectionsForKeyExtensions { get; set; }
 
@@ -41,13 +41,8 @@ namespace Orleans.Providers.MongoDB.Configuration
         {
             CollectionPrefix = "Grains";
         }
-
-        /// <summary>
-        /// This is officially called Clown, because cloning
-        /// things like this should be unneccessary
-        /// </summary>
-        /// <returns></returns>
-        public MongoDBGrainStorageOptions Clown()
+        
+        public object Clone()
         {
             return new MongoDBGrainStorageOptions
             {
