@@ -7,6 +7,10 @@ namespace Orleans.Providers.MongoDB.Configuration
     /// </summary>
     public class MongoDBGrainStorageOptions : MongoDBOptions
     {
+        public bool SeparateCollectionsForKeyExtensions { get; set; }
+
+        public string StripFromGrainName { get; set; }
+
         public MongoDBGrainStorageOptions()
         {
             CollectionPrefix = "Grains";

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
@@ -11,6 +7,10 @@ using Orleans.Providers.MongoDB.Utils;
 using Orleans.Runtime;
 using Orleans.Serialization;
 using Orleans.Storage;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Orleans.Providers.MongoDB.StorageProviders
 {
@@ -43,9 +43,16 @@ namespace Orleans.Providers.MongoDB.StorageProviders
             return OrleansJsonSerializer.UpdateSerializerSettings(OrleansJsonSerializer.GetDefaultSerializerSettings(typeResolver, providerRuntime.GrainFactory), config);
         }
 
-        protected virtual string ReturnGrainName(string grainType, GrainReference grainReference)
+        protected virtual string ReturnGrainName(string grainType)
         {
-            return grainType.Split('.', '+').Last();
+            if (options.StripFromGrainName != null)
+            {
+                return grainType.Replace(options.StripFromGrainName, "");
+            }
+            else
+            {
+                return grainType.Split('.', '+').Last();
+            }
         }
 
         public void Participate(ISiloLifecycle lifecycle)
@@ -69,7 +76,7 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         {
             return DoAndLog(nameof(ReadStateAsync), async () =>
             {
-                var grainCollection = GetCollection(grainType);
+                var grainCollection = GetCollection(grainType, grainReference);
                 var grainKey = grainReference.ToKeyString();
 
                 var existing =
@@ -98,7 +105,7 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         {
             return DoAndLog(nameof(WriteStateAsync), async () =>
             {
-                var grainCollection = GetCollection(grainType);
+                var grainCollection = GetCollection(grainType, grainReference);
                 var grainKey = grainReference.ToKeyString();
 
                 var grainData = serializer.Serialize(grainState);
@@ -163,16 +170,35 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         {
             return DoAndLog(nameof(ClearStateAsync), () =>
             {
-                var grainCollection = GetCollection(grainType);
+                var grainCollection = GetCollection(grainType, grainReference);
                 var grainKey = grainReference.ToKeyString();
 
                 return grainCollection.DeleteManyAsync(Filter.Eq(FieldId, grainKey));
             });
         }
 
-        private IMongoCollection<BsonDocument> GetCollection(string grainType)
+        private IMongoCollection<BsonDocument> GetCollection(string grainType, GrainReference grainReference)
         {
-            var collectionName = options.CollectionPrefix + grainType.Split('.', '+').Last();
+            var collectionName = options.CollectionPrefix + ReturnGrainName(grainType);
+
+            if (options.SeparateCollectionsForKeyExtensions == true)
+            {
+                string keyExtension = null;
+
+                if (grainReference is IGrainWithGuidCompoundKey)
+                {
+                    grainReference.GetPrimaryKey(out keyExtension);
+                }
+                else if (grainReference is IGrainWithIntegerCompoundKey)
+                {
+                    grainReference.GetPrimaryKeyLong(out keyExtension);
+                }
+
+                if (string.IsNullOrEmpty(keyExtension) == false)
+                {
+                    collectionName += ":" + keyExtension;
+                }
+            }
 
             return database.GetCollection<BsonDocument>(collectionName);
         }
