@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Providers.MongoDB", "Orleans.Providers.MongoDB\Orleans.Providers.MongoDB.csproj", "{E49725D0-D9E8-4F68-8FE3-919F062D3041}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{7A336DC5-203A-4E16-B3A4-C6E2B79DDBD0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Providers.MongoDB.Test.Host", "Test\Host\Orleans.Providers.MongoDB.Test.Host.csproj", "{4B8A18F9-E41A-426A-9268-AAC92A6C8DEB}"
