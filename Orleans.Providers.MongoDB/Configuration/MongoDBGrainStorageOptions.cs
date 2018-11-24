@@ -15,7 +15,7 @@ namespace Orleans.Providers.MongoDB.Configuration
             {
                 opt.ForType = new Dictionary<Type, MongoDBGrainStorageOptions>();
             }
-            var typeOptions = new MongoDBGrainStorageOptions();
+            var typeOptions = opt;
             options(typeOptions);
             opt.ForType.Add(typeof(T), typeOptions);
         }
