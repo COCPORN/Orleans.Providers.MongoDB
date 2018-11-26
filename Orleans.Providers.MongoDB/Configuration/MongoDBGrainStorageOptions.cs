@@ -1,7 +1,9 @@
 ﻿// ReSharper disable InheritdocConsiderUsage
 
+using Orleans.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Orleans.Providers.MongoDB.Configuration
 {
@@ -26,9 +28,47 @@ namespace Orleans.Providers.MongoDB.Configuration
     /// </summary>
     public class MongoDBGrainStorageOptions : MongoDBOptions, ICloneable
     {
+        string ReturnGrainName(string grainType)
+        {
+            if (StripFromGrainName != null)
+            {
+                grainType = grainType.Replace(StripFromGrainName, "");
+            }
+            else
+            {
+                grainType = grainType.Split('.', '+').Last();
+            }
+
+            if (StripGrainFromCollectionName)
+            {
+                grainType = grainType.Replace("Grain", "");
+            }
+
+            return grainType;
+        }
+
         public bool SeparateCollectionsForKeyExtensions { get; set; }
 
+        Func<string, string> resolver = null;
+        public Func<string, string> GrainNameResolver
+        {
+            get
+            {
+                if (resolver == null) { return ReturnGrainName; }
+                else
+                {
+                    return resolver;
+                }
+
+            }
+            set { resolver = value; }
+        }
+
+        public Func<GrainReference, string> GetNameForGrainReference { get; set; }
+
         public string StripFromGrainName { get; set; }
+
+        public bool StripGrainFromCollectionName { get; set; } = true;
 
         internal Dictionary<Type, MongoDBGrainStorageOptions> ForType { get; set; }
 
@@ -41,7 +81,7 @@ namespace Orleans.Providers.MongoDB.Configuration
         {
             CollectionPrefix = "Grains";
         }
-        
+
         public object Clone()
         {
             return new MongoDBGrainStorageOptions
@@ -51,7 +91,10 @@ namespace Orleans.Providers.MongoDB.Configuration
                 DatabaseName = DatabaseName,
                 ForType = ForType,
                 SeparateCollectionsForKeyExtensions = SeparateCollectionsForKeyExtensions,
-                StripFromGrainName = StripFromGrainName
+                StripFromGrainName = StripFromGrainName,
+                StripGrainFromCollectionName = StripGrainFromCollectionName,
+                GetNameForGrainReference = GetNameForGrainReference,
+                GrainNameResolver = GrainNameResolver
             };
         }
     }

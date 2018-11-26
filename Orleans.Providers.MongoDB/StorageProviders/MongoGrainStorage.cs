@@ -41,19 +41,7 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         protected virtual JsonSerializerSettings ReturnSerializerSettings(ITypeResolver typeResolver, IProviderRuntime providerRuntime, IProviderConfiguration config)
         {
             return OrleansJsonSerializer.UpdateSerializerSettings(OrleansJsonSerializer.GetDefaultSerializerSettings(typeResolver, providerRuntime.GrainFactory), config);
-        }
-
-        protected virtual string ReturnGrainName(string grainType)
-        {
-            if (options.StripFromGrainName != null)
-            {
-                return grainType.Replace(options.StripFromGrainName, "");
-            }
-            else
-            {
-                return grainType.Split('.', '+').Last();
-            }
-        }
+        }   
 
         public void Participate(ISiloLifecycle lifecycle)
         {
@@ -190,7 +178,15 @@ namespace Orleans.Providers.MongoDB.StorageProviders
                 }
             }
 
-            var collectionName = options.CollectionPrefix + ReturnGrainName(grainType);
+            string collectionName;
+
+            if (options.GetNameForGrainReference != null)
+            {
+                collectionName = options.GetNameForGrainReference(grainReference);
+            } else
+            {
+                collectionName = options.CollectionPrefix + options.GrainNameResolver(grainType);
+            }
 
             if (options.SeparateCollectionsForKeyExtensions == true)
             {
