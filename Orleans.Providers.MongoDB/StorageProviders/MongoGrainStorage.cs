@@ -64,7 +64,7 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         {
             return DoAndLog(nameof(ReadStateAsync), async () =>
             {
-                var grainCollection = GetCollection(grainType, grainReference);
+                var grainCollection = GetCollection(grainType, grainReference, grainState);
                 var grainKey = grainReference.ToKeyString();
 
                 var existing =
@@ -93,7 +93,7 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         {
             return DoAndLog(nameof(WriteStateAsync), async () =>
             {
-                var grainCollection = GetCollection(grainType, grainReference);
+                var grainCollection = GetCollection(grainType, grainReference, grainState);
                 var grainKey = grainReference.ToKeyString();
 
                 var grainData = serializer.Serialize(grainState);
@@ -158,55 +158,29 @@ namespace Orleans.Providers.MongoDB.StorageProviders
         {
             return DoAndLog(nameof(ClearStateAsync), () =>
             {
-                var grainCollection = GetCollection(grainType, grainReference);
+                var grainCollection = GetCollection(grainType, grainReference, grainState);
                 var grainKey = grainReference.ToKeyString();
 
                 return grainCollection.DeleteManyAsync(Filter.Eq(FieldId, grainKey));
             });
         }
 
-        private IMongoCollection<BsonDocument> GetCollection(string grainType, GrainReference grainReference)
+        private IMongoCollection<BsonDocument> GetCollection(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var options = this.options;
 
             if (options.ForType != null)
             {
-                var type = grainReference.GetType();
-                if (options.ForType.ContainsKey(type))
+                if (options.ForType.TryGetValue(grainType, out var newOptions))
                 {
-                    options = options.GetForType(type);
+                    options = newOptions;
                 }
             }
 
             string collectionName;
-
-            if (options.GetNameForGrainReference != null)
-            {
-                collectionName = options.GetNameForGrainReference(grainReference);
-            } else
-            {
-                collectionName = options.CollectionPrefix + options.GrainNameResolver(grainType);
-            }
-
-            if (options.SeparateCollectionsForKeyExtensions == true)
-            {
-                string keyExtension = null;
-
-                if (grainReference is IGrainWithGuidCompoundKey)
-                {
-                    grainReference.GetPrimaryKey(out keyExtension);
-                }
-                else if (grainReference is IGrainWithIntegerCompoundKey)
-                {
-                    grainReference.GetPrimaryKeyLong(out keyExtension);
-                }
-
-                if (string.IsNullOrEmpty(keyExtension) == false)
-                {
-                    collectionName += ":" + keyExtension;
-                }
-            }
-
+            
+            collectionName = options.CollectionNameResolver(grainType, options, grainState, grainReference);
+            
             return database.GetCollection<BsonDocument>(collectionName);
         }
 

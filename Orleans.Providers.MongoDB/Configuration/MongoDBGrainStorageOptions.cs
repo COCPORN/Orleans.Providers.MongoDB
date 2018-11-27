@@ -9,17 +9,16 @@ namespace Orleans.Providers.MongoDB.Configuration
 {
     public static class MongoDBGrainStorageOptionsExtentions
     {
-        public static void For<T>(this MongoDBGrainStorageOptions opt,
-            Action<MongoDBGrainStorageOptions> options)
-            where T : IGrain
+        public static void For<T>(this MongoDBGrainStorageOptions originalOptions,
+            Action<MongoDBGrainStorageOptions> newOptions)            
         {
-            if (opt.ForType == null)
+            if (originalOptions.ForType == null)
             {
-                opt.ForType = new Dictionary<Type, MongoDBGrainStorageOptions>();
+                originalOptions.ForType = new Dictionary<string, MongoDBGrainStorageOptions>();
             }
-            var typeOptions = (MongoDBGrainStorageOptions)opt.Clone();
-            options(typeOptions);
-            opt.ForType.Add(typeof(T), typeOptions);
+            var typeOptions = (MongoDBGrainStorageOptions)originalOptions.Clone();
+            newOptions(typeOptions);
+            originalOptions.ForType.Add(typeof(T).FullName, typeOptions);
         }
     }
 
@@ -28,51 +27,41 @@ namespace Orleans.Providers.MongoDB.Configuration
     /// </summary>
     public class MongoDBGrainStorageOptions : MongoDBOptions, ICloneable
     {
-        string ReturnGrainName(string grainType)
+        public static string DefaultCollectionNameResolver(string grainType, 
+            MongoDBGrainStorageOptions options, 
+            IGrainState grainState,
+            GrainReference grainReference)
         {
-            if (StripFromGrainName != null)
+            if (options.StripFromGrainName != null)
             {
-                grainType = grainType.Replace(StripFromGrainName, "");
+                grainType = grainType.Replace(options.StripFromGrainName, "");
             }
             else
             {
                 grainType = grainType.Split('.', '+').Last();
             }
 
-            if (StripGrainFromCollectionName)
+            if (options.StripGrainFromCollectionName)
             {
                 grainType = grainType.Replace("Grain", "");
             }
 
-            return grainType;
-        }
-
-        public bool SeparateCollectionsForKeyExtensions { get; set; }
-
-        Func<string, string> resolver = null;
-        public Func<string, string> GrainNameResolver
-        {
-            get
-            {
-                if (resolver == null) { return ReturnGrainName; }
-                else
-                {
-                    return resolver;
-                }
-
-            }
-            set { resolver = value; }
-        }
-
-        public Func<GrainReference, string> GetNameForGrainReference { get; set; }
+            return options.CollectionPrefix + grainType;
+        }        
+        
+        public Func<string, 
+            MongoDBGrainStorageOptions, 
+            IGrainState, 
+            GrainReference,
+            string> CollectionNameResolver { get; set; } = DefaultCollectionNameResolver;        
 
         public string StripFromGrainName { get; set; }
 
         public bool StripGrainFromCollectionName { get; set; } = true;
 
-        internal Dictionary<Type, MongoDBGrainStorageOptions> ForType { get; set; }
+        internal Dictionary<string, MongoDBGrainStorageOptions> ForType { get; set; }
 
-        public MongoDBGrainStorageOptions GetForType(Type type)
+        public MongoDBGrainStorageOptions GetForType(string type)
         {
             return ForType[type];
         }
@@ -89,12 +78,10 @@ namespace Orleans.Providers.MongoDB.Configuration
                 CollectionPrefix = CollectionPrefix,
                 ConnectionString = ConnectionString,
                 DatabaseName = DatabaseName,
-                ForType = ForType,
-                SeparateCollectionsForKeyExtensions = SeparateCollectionsForKeyExtensions,
+                ForType = ForType,                
                 StripFromGrainName = StripFromGrainName,
-                StripGrainFromCollectionName = StripGrainFromCollectionName,
-                GetNameForGrainReference = GetNameForGrainReference,
-                GrainNameResolver = GrainNameResolver
+                StripGrainFromCollectionName = StripGrainFromCollectionName,                
+                CollectionNameResolver = CollectionNameResolver
             };
         }
     }

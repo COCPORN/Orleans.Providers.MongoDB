@@ -7,11 +7,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.1.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Orleans.Providers.MongoDB\Orleans.Providers.MongoDB.csproj" />
+    <ProjectReference Include="..\..\Orleans.Providers.MongoDB\Bember.Orleans.Providers.MongoDB.csproj" />
     <ProjectReference Include="..\Grains\Orleans.Providers.MongoDB.Test.Grains.csproj" />
   </ItemGroup>
 
